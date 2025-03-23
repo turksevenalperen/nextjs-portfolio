@@ -1,0 +1,514 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { Search, Plus } from "lucide-react"
+
+import { DashboardLayout } from "@/components/layout/dashboard-layout"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAdminMode } from "@/hooks/use-admin-mode"
+
+// Örnek çalışan verileri
+const employeesData = [
+  {
+    id: 1,
+    name: "Ahmet Yılmaz",
+    position: "Yazılım Geliştirici",
+    department: "Teknoloji",
+    email: "ahmet@iotech.com",
+    phone: "+90 555 123 4567",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "React ve Node.js uzmanı, 3 yıllık deneyime sahip.",
+  },
+  {
+    id: 2,
+    name: "Ayşe Demir",
+    position: "UI/UX Tasarımcı",
+    department: "Tasarım",
+    email: "ayse@iotech.com",
+    phone: "+90 555 234 5678",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "Kullanıcı deneyimi ve arayüz tasarımı konusunda uzman.",
+  },
+  {
+    id: 3,
+    name: "Mehmet Kaya",
+    position: "Proje Yöneticisi",
+    department: "Yönetim",
+    email: "mehmet@iotech.com",
+    phone: "+90 555 345 6789",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "5 yıllık proje yönetimi deneyimine sahip.",
+  },
+  {
+    id: 4,
+    name: "Zeynep Şahin",
+    position: "Veri Analisti",
+    department: "Veri",
+    email: "zeynep@iotech.com",
+    phone: "+90 555 456 7890",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "Veri analizi ve raporlama konusunda uzman.",
+  },
+  {
+    id: 5,
+    name: "Ali Öztürk",
+    position: "Mobil Geliştirici",
+    department: "Teknoloji",
+    email: "ali@iotech.com",
+    phone: "+90 555 567 8901",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "iOS ve Android uygulama geliştirme konusunda uzman.",
+  },
+  {
+    id: 6,
+    name: "Fatma Yıldız",
+    position: "İnsan Kaynakları Uzmanı",
+    department: "İK",
+    email: "fatma@iotech.com",
+    phone: "+90 555 678 9012",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "İşe alım ve çalışan ilişkileri konusunda uzman.",
+  },
+  {
+    id: 7,
+    name: "Mustafa Çelik",
+    position: "Pazarlama Uzmanı",
+    department: "Pazarlama",
+    email: "mustafa@iotech.com",
+    phone: "+90 555 789 0123",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "Dijital pazarlama ve marka yönetimi konusunda uzman.",
+  },
+  {
+    id: 8,
+    name: "Elif Aydın",
+    position: "Müşteri İlişkileri",
+    department: "Satış",
+    email: "elif@iotech.com",
+    phone: "+90 555 890 1234",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "Müşteri ilişkileri ve satış konusunda uzman.",
+  },
+]
+
+// Departman listesi
+const departments = ["Teknoloji", "Tasarım", "Yönetim", "Veri", "İK", "Pazarlama", "Satış"]
+
+// Pozisyon listesi
+const positions = [
+  "Yazılım Geliştirici",
+  "UI/UX Tasarımcı",
+  "Proje Yöneticisi",
+  "Veri Analisti",
+  "Mobil Geliştirici",
+  "İnsan Kaynakları Uzmanı",
+  "Pazarlama Uzmanı",
+  "Müşteri İlişkileri",
+]
+
+export default function EmployeesPage() {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedEmployee, setSelectedEmployee] = useState<(typeof employeesData)[0] | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [employees, setEmployees] = useState(employeesData)
+
+  // Admin doğrulama için state'ler
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false)
+  const [adminPassword, setAdminPassword] = useState("")
+  const [adminError, setAdminError] = useState("")
+  const [adminAction, setAdminAction] = useState<"add" | "edit">("add")
+  const [employeeToEdit, setEmployeeToEdit] = useState<(typeof employeesData)[0] | null>(null)
+
+  // Çalışan ekleme/düzenleme için state'ler
+  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [newEmployee, setNewEmployee] = useState({
+    id: 0,
+    name: "",
+    position: "",
+    department: "",
+    email: "",
+    phone: "",
+    image: "/placeholder.svg?height=300&width=300",
+    description: "",
+  })
+
+  const { isAdminMode } = useAdminMode()
+
+  // Arama sorgusuna göre çalışanları filtreliyoruz
+  const filteredEmployees = employees.filter(
+    (employee) =>
+      employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.department.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  const handleEmployeeClick = (employee: (typeof employeesData)[0]) => {
+    setSelectedEmployee(employee)
+    setIsDialogOpen(true)
+  }
+
+  const handleAddEmployeeClick = () => {
+    if (isAdminMode) {
+      // Admin modunda doğrudan formu aç
+      setIsAddEmployeeOpen(true)
+      setIsEditing(false)
+      setNewEmployee({
+        id: employees.length + 1,
+        name: "",
+        position: "",
+        department: "",
+        email: "",
+        phone: "",
+        image: "/placeholder.svg?height=300&width=300",
+        description: "",
+      })
+    } else {
+      // Admin modunda değilse doğrulama iste
+      setAdminAction("add")
+      setAdminDialogOpen(true)
+      setAdminPassword("")
+      setAdminError("")
+    }
+  }
+
+  const handleAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Admin şifresi kontrolü (fake)
+    if (adminPassword === "admin123") {
+      // Şifre doğru
+      setAdminDialogOpen(false)
+      setAdminError("")
+
+      if (adminAction === "add") {
+        // Çalışan ekleme formunu aç
+        setIsAddEmployeeOpen(true)
+        setIsEditing(false)
+        setNewEmployee({
+          id: employees.length + 1,
+          name: "",
+          position: "",
+          department: "",
+          email: "",
+          phone: "",
+          image: "/placeholder.svg?height=300&width=300",
+          description: "",
+        })
+      } else if (adminAction === "edit" && employeeToEdit) {
+        // Çalışan düzenleme formunu aç
+        setIsAddEmployeeOpen(true)
+        setIsEditing(true)
+        setNewEmployee(employeeToEdit)
+        setIsDialogOpen(false)
+      }
+    } else {
+      // Şifre yanlış
+      setAdminError("Yanlış şifre. Lütfen tekrar deneyin.")
+    }
+  }
+
+  const handleEditEmployee = (employee: (typeof employeesData)[0]) => {
+    if (isAdminMode) {
+      // Admin modunda doğrudan düzenleme formunu aç
+      setIsAddEmployeeOpen(true)
+      setIsEditing(true)
+      setNewEmployee(employee)
+      setIsDialogOpen(false)
+    } else {
+      // Admin modunda değilse doğrulama iste
+      setAdminAction("edit")
+      setEmployeeToEdit(employee)
+      setAdminDialogOpen(true)
+      setAdminPassword("")
+      setAdminError("")
+    }
+  }
+
+  const handleSaveEmployee = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (isEditing) {
+      // Mevcut çalışanı güncelle
+      setEmployees((prev) => prev.map((emp) => (emp.id === newEmployee.id ? newEmployee : emp)))
+    } else {
+      // Yeni çalışan ekle
+      setEmployees((prev) => [...prev, newEmployee])
+    }
+
+    // Formu kapat
+    setIsAddEmployeeOpen(false)
+    setNewEmployee({
+      id: 0,
+      name: "",
+      position: "",
+      department: "",
+      email: "",
+      phone: "",
+      image: "/placeholder.svg?height=300&width=300",
+      description: "",
+    })
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setNewEmployee((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setNewEmployee((prev) => ({ ...prev, [name]: value }))
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-2xl font-bold tracking-tight">Çalışanlar</h1>
+          <div className="flex items-center gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Çalışan ara..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleAddEmployeeClick} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              <span>Çalışan Ekle</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Çalışan Kartları */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredEmployees.map((employee) => (
+            <Card
+              key={employee.id}
+              className="cursor-pointer transition-all hover:shadow-md"
+              onClick={() => handleEmployeeClick(employee)}
+            >
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col items-center gap-4">
+                  <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+                    <AvatarImage src={employee.image} alt={employee.name} />
+                    <AvatarFallback>{employee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1 text-center">
+                    <h3 className="font-medium">{employee.name}</h3>
+                    <p className="text-sm text-muted-foreground">{employee.position}</p>
+                    <p className="text-xs text-muted-foreground">{employee.department}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Çalışan Detay Modalı */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            {selectedEmployee && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>{selectedEmployee.name}</DialogTitle>
+                  <DialogDescription>{selectedEmployee.position}</DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col sm:flex-row gap-4 py-4">
+                  <Avatar className="h-24 w-24 mx-auto sm:mx-0">
+                    <AvatarImage src={selectedEmployee.image} alt={selectedEmployee.name} />
+                    <AvatarFallback>{selectedEmployee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-sm font-medium">Departman</h4>
+                      <p className="text-sm text-muted-foreground">{selectedEmployee.department}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium">E-posta</h4>
+                      <p className="text-sm text-muted-foreground">{selectedEmployee.email}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium">Telefon</h4>
+                      <p className="text-sm text-muted-foreground">{selectedEmployee.phone}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium">Hakkında</h4>
+                      <p className="text-sm text-muted-foreground">{selectedEmployee.description}</p>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => handleEditEmployee(selectedEmployee)}>
+                    Düzenle
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Admin Şifresi Modalı */}
+        <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Admin Doğrulama</DialogTitle>
+              <DialogDescription>Bu işlemi gerçekleştirmek için admin şifresini girin</DialogDescription>
+            </DialogHeader>
+
+            {adminError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{adminError}</AlertDescription>
+              </Alert>
+            )}
+
+            <form onSubmit={handleAdminSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="adminPassword">Admin Şifresi</Label>
+                <Input
+                  id="adminPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">(Fake: Şifre "admin123")</p>
+              </div>
+              <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+                <Button type="button" variant="outline" onClick={() => setAdminDialogOpen(false)}>
+                  İptal
+                </Button>
+                <Button type="submit">Doğrula</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Çalışan Ekleme/Düzenleme Modalı */}
+        <Dialog open={isAddEmployeeOpen} onOpenChange={setIsAddEmployeeOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{isEditing ? "Çalışan Düzenle" : "Yeni Çalışan Ekle"}</DialogTitle>
+              <DialogDescription>
+                {isEditing ? "Çalışan bilgilerini güncelleyin" : "Yeni çalışan bilgilerini doldurun"}
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleSaveEmployee} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Ad Soyad</Label>
+                  <Input id="name" name="name" value={newEmployee.name} onChange={handleInputChange} required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-posta</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={newEmployee.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="position">Pozisyon</Label>
+                  <Select
+                    value={newEmployee.position}
+                    onValueChange={(value: string) => handleSelectChange("position", value)}
+                  >
+                    <SelectTrigger id="position">
+                      <SelectValue placeholder="Pozisyon seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {positions.map((position) => (
+                        <SelectItem key={position} value={position}>
+                          {position}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="department">Departman</Label>
+                  <Select
+                    value={newEmployee.department}
+                    onValueChange={(value: string) => handleSelectChange("department", value)}
+                  >
+                    <SelectTrigger id="department">
+                      <SelectValue placeholder="Departman seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((department) => (
+                        <SelectItem key={department} value={department}>
+                          {department}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefon</Label>
+                  <Input id="phone" name="phone" value={newEmployee.phone} onChange={handleInputChange} required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="image">Profil Resmi URL</Label>
+                  <Input
+                    id="image"
+                    name="image"
+                    value={newEmployee.image}
+                    onChange={handleInputChange}
+                    placeholder="/placeholder.svg?height=300&width=300"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Hakkında</Label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={newEmployee.description}
+                  onChange={handleInputChange}
+                  className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder="Çalışan hakkında kısa bir açıklama..."
+                />
+              </div>
+
+              <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsAddEmployeeOpen(false)}>
+                  İptal
+                </Button>
+                <Button type="submit">{isEditing ? "Güncelle" : "Ekle"}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
+  )
+}
+
