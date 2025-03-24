@@ -1,15 +1,28 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Clock, Users, CheckCircle } from "lucide-react"
+import { Search, Clock, Users, CheckCircle, Plus } from "lucide-react"
+import { format } from "date-fns"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-// Örnek proje verileri
 const projectsData = [
   {
     id: 1,
@@ -94,11 +107,47 @@ const projectsData = [
   },
 ]
 
+// Tüm çalışanların listesi
+const allTeamMembers = [
+  { id: 1, name: "Ahmet Yılmaz", image: "/placeholder.svg?height=32&width=32" },
+  { id: 2, name: "Ayşe Demir", image: "/placeholder.svg?height=32&width=32" },
+  { id: 3, name: "Mehmet Kaya", image: "/placeholder.svg?height=32&width=32" },
+  { id: 4, name: "Zeynep Şahin", image: "/placeholder.svg?height=32&width=32" },
+  { id: 5, name: "Ali Öztürk", image: "/placeholder.svg?height=32&width=32" },
+  { id: 6, name: "Fatma Yıldız", image: "/placeholder.svg?height=32&width=32" },
+  { id: 7, name: "Mustafa Çelik", image: "/placeholder.svg?height=32&width=32" },
+  { id: 8, name: "Elif Aydın", image: "/placeholder.svg?height=32&width=32" },
+]
+
+// Proje türleri
+const projectTypes = [
+  "Mobil Uygulama",
+  "Web Geliştirme",
+  "Veri Analizi",
+  "Tasarım",
+  "Pazarlama",
+  "İnsan Kaynakları",
+  "Finans",
+  "Diğer",
+]
+
 export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [projects, setProjects] = useState(projectsData)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  // Yeni proje için form state'i
+  const [newProject, setNewProject] = useState({
+    name: "",
+    description: "",
+    type: "",
+    teamSize: "1",
+    teamMembers: ["", "", ""],
+    dueDate: new Date(),
+  })
 
   // Arama sorgusuna göre projeleri filtreliyoruz
-  const filteredProjects = projectsData.filter(
+  const filteredProjects = projects.filter(
     (project) =>
       project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,19 +168,81 @@ export default function ProjectsPage() {
     }
   }
 
+  // Form alanlarını güncelleme fonksiyonu
+  const handleInputChange = (field: string, value: any) => {
+    setNewProject({
+      ...newProject,
+      [field]: value,
+    })
+  }
+
+  // Takım üyesi seçimini güncelleme
+  const handleTeamMemberChange = (index: number, value: string) => {
+    const updatedTeamMembers = [...newProject.teamMembers]
+    updatedTeamMembers[index] = value
+    setNewProject({
+      ...newProject,
+      teamMembers: updatedTeamMembers,
+    })
+  }
+
+  // Yeni proje ekleme
+  const handleAddProject = () => {
+    // Seçilen takım üyelerini bulma
+    const selectedTeamMembers = newProject.teamMembers
+      .slice(0, Number.parseInt(newProject.teamSize))
+      .map((memberId) => {
+        const member = allTeamMembers.find((m) => m.id.toString() === memberId)
+        return member ? { name: member.name, image: member.image } : null
+      })
+      .filter(Boolean) as { name: string; image: string }[]
+
+    // Yeni proje oluşturma
+    const project = {
+      id: projects.length + 1,
+      name: newProject.name,
+      description: `${newProject.type} projesi: ${newProject.description}`,
+      status: "Planlama",
+      progress: 0,
+      dueDate: format(newProject.dueDate, "d MMMM yyyy"),
+      team: selectedTeamMembers,
+      tasks: { completed: 0, total: 0 },
+    }
+
+    // Projeyi listeye ekleme
+    setProjects([...projects, project])
+
+    // Formu sıfırlama ve dialogu kapatma
+    setNewProject({
+      name: "",
+      description: "",
+      type: "",
+      teamSize: "1",
+      teamMembers: ["", "", ""],
+      dueDate: new Date(),
+    })
+    setIsDialogOpen(false)
+  }
+
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl font-bold tracking-tight">Projeler</h1>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Proje ara..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Proje ara..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button onClick={() => setIsDialogOpen(true)} className="gap-1">
+              <Plus className="h-4 w-4" />
+              Proje Ekle
+            </Button>
           </div>
         </div>
 
@@ -192,6 +303,112 @@ export default function ProjectsPage() {
           ))}
         </div>
       </div>
+
+      {/* Proje Ekle Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Yeni Proje Ekle</DialogTitle>
+            <DialogDescription>Yeni bir proje oluşturmak için aşağıdaki bilgileri doldurun.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="project-name">Proje Adı</Label>
+              <Input
+                id="project-name"
+                placeholder="Proje adını girin"
+                value={newProject.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="project-description">Proje Açıklaması</Label>
+              <Input
+                id="project-description"
+                placeholder="Proje açıklamasını girin"
+                value={newProject.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="project-type">Proje Türü</Label>
+              <Select value={newProject.type} onValueChange={(value) => handleInputChange("type", value)}>
+                <SelectTrigger id="project-type">
+                  <SelectValue placeholder="Proje türü seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="team-size">Ekip Üye Sayısı</Label>
+              <Select value={newProject.teamSize} onValueChange={(value) => handleInputChange("teamSize", value)}>
+                <SelectTrigger id="team-size">
+                  <SelectValue placeholder="Ekip üye sayısını seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Kişi</SelectItem>
+                  <SelectItem value="2">2 Kişi</SelectItem>
+                  <SelectItem value="3">3 Kişi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Dinamik ekip üyesi seçimi */}
+            {Array.from({ length: Number.parseInt(newProject.teamSize) }).map((_, index) => (
+              <div key={index} className="grid gap-2">
+                <Label htmlFor={`team-member-${index}`}>{`Ekip Üyesi ${index + 1}`}</Label>
+                <Select
+                  value={newProject.teamMembers[index]}
+                  onValueChange={(value) => handleTeamMemberChange(index, value)}
+                >
+                  <SelectTrigger id={`team-member-${index}`}>
+                    <SelectValue placeholder="Ekip üyesi seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allTeamMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id.toString()}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+
+            <div className="grid gap-2">
+              <Label htmlFor="due-date">Bitiş Tarihi</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <Clock className="mr-2 h-4 w-4" />
+                    {newProject.dueDate ? format(newProject.dueDate, "PPP") : "Tarih seçin"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={newProject.dueDate}
+                    onSelect={(date) => handleInputChange("dueDate", date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              İptal
+            </Button>
+            <Button onClick={handleAddProject}>Proje Ekle</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   )
 }

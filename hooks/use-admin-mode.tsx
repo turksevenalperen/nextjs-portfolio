@@ -22,6 +22,7 @@ interface AdminModeContextType {
   adminDialogOpen: boolean
   setAdminDialogOpen: (value: boolean) => void
   handleAdminSubmit: (e: React.FormEvent) => void
+  toggleAdminMode: () => void // New function to toggle admin mode
 }
 
 const AdminModeContext = createContext<AdminModeContextType | undefined>(undefined)
@@ -61,6 +62,17 @@ export function AdminModeProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Yeni fonksiyon: Admin modunu aç/kapat
+  const toggleAdminMode = () => {
+    if (isAdminMode) {
+      // Eğer admin modu açıksa, kapat
+      setAdminMode(false)
+    } else {
+      // Eğer admin modu kapalıysa, dialog'u aç
+      setAdminDialogOpen(true)
+    }
+  }
+
   return (
     <AdminModeContext.Provider
       value={{
@@ -69,6 +81,7 @@ export function AdminModeProvider({ children }: { children: ReactNode }) {
         adminDialogOpen,
         setAdminDialogOpen,
         handleAdminSubmit,
+        toggleAdminMode, // Yeni fonksiyonu context'e ekle
       }}
     >
       {children}
@@ -118,4 +131,3 @@ export function useAdminMode() {
   }
   return context
 }
-

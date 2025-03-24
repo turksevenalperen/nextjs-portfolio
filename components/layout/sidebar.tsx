@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -18,6 +17,7 @@ import {
   Bell,
   X,
   Lock,
+  LockOpen,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAdminMode } from "@/hooks/use-admin-mode"
+import { signOut } from "next-auth/react"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -41,7 +42,7 @@ export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
-  const { isAdminMode, setAdminMode, adminDialogOpen, setAdminDialogOpen, handleAdminSubmit } = useAdminMode()
+  const { isAdminMode, toggleAdminMode, adminDialogOpen, setAdminDialogOpen } = useAdminMode()
 
   const routes = [
     {
@@ -124,18 +125,28 @@ export function Sidebar({ className }: SidebarProps) {
             <AvatarFallback>AY</AvatarFallback>
           </Avatar>
           <div className="flex flex-1 flex-col">
-            <span className="text-sm font-medium">Ahmet Yılmaz</span>
-            <span className="text-xs text-muted-foreground">Yönetici</span>
+            <span className="text-sm font-medium">Alperen Türkseven</span>
+            <span className="text-xs text-muted-foreground">Stajer</span>
           </div>
-          <Button variant="ghost" size="icon" className="relative" onClick={() => setAdminDialogOpen(true)}>
-            <Lock className={cn("h-5 w-5", isAdminMode ? "text-green-500" : "text-muted-foreground")} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={toggleAdminMode} // Burada toggleAdminMode kullanıyoruz
+            title={isAdminMode ? "Admin Modunu Kapat" : "Admin Moduna Geç"}
+          >
+            {isAdminMode ? (
+              <LockOpen className="h-5 w-5 text-green-500" />
+            ) : (
+              <Lock className="h-5 w-5 text-muted-foreground" />
+            )}
             {isAdminMode && (
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
               </span>
             )}
-            <span className="sr-only">{isAdminMode ? "Admin Modu Aktif" : "Admin Modu"}</span>
+            <span className="sr-only">{isAdminMode ? "Admin Modu Aktif (Kapatmak için tıklayın)" : "Admin Modu"}</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -167,13 +178,25 @@ export function Sidebar({ className }: SidebarProps) {
               <DropdownMenuLabel>Hesabım</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
-                <span>Profil</span>
+                <Link href="/profile">
+                  <span>Profil</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <span>Ayarlar</span>
+                <Link href="/settings">
+                  <span>Ayarlar</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              {isAdminMode && (
+                <>
+                  <DropdownMenuItem onClick={() => toggleAdminMode()}>
+                    <span>Admin Modundan Çık</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem onClick={() => signOut({ redirect: true, callbackUrl: "/login" })}>
                 <span>Çıkış Yap</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

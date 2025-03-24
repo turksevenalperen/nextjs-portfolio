@@ -1,17 +1,19 @@
-import type { ReactNode } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
+"use client"
 
-interface DashboardLayoutProps {
-  children: ReactNode
+import type React from "react"
+
+import { Sidebar } from "./sidebar"
+import { cn } from "@/lib/utils"
+
+interface DashboardLayoutProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ className, children }: DashboardLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      <Sidebar className="w-64 flex-shrink-0" />
-      <main className="flex-1 overflow-x-hidden">
-        <div className="container mx-auto p-4 sm:p-6">{children}</div>
-      </main>
+    <div className={cn("flex h-screen antialiased", className)}>
+      <Sidebar className="flex-none w-64 border-r" />
+      <main className="flex-1 h-full p-4">{children}</main>
     </div>
   )
 }

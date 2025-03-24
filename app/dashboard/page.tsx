@@ -20,13 +20,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-// Chart.js bileşenlerini kaydet
+
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
 
-  // Line chart verileri
+  
   const lineChartData = {
     labels: ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran"],
     datasets: [
@@ -40,7 +40,7 @@ export default function DashboardPage() {
     ],
   }
 
-  // Bar chart verileri
+  
   const barChartData = {
     labels: ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"],
     datasets: [
@@ -54,7 +54,7 @@ export default function DashboardPage() {
     ],
   }
 
-  // Takım performansı verileri
+  
   const teamPerformance = [
     {
       name: "Yazılım Ekibi",
@@ -76,7 +76,7 @@ export default function DashboardPage() {
     },
   ]
 
-  // Son aktiviteler
+
   const recentActivities = [
     {
       user: "Ahmet Yılmaz",
@@ -109,7 +109,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-5">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
-        {/* Özet Kartları */}
+      
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -180,7 +180,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Grafikler */}
+      
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -203,7 +203,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Sekmeler */}
+   
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Takım Performansı</TabsTrigger>
