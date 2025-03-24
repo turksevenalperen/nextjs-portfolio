@@ -1,9 +1,8 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { signIn, useSession } from "next-auth/react" // useSession ekledik
 import { BarChart3, Eye, EyeOff, ArrowLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -22,11 +21,20 @@ import { ModeToggle } from "@/components/ui/alperen"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
+
+  // Eğer kullanıcı zaten giriş yapmışsa, otomatik olarak dashboard'a yönlendir
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/dashboard")
+    }
+  }, [status, router])
+
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
 
-  // Şifremi unuttum için state'ler
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
   const [resetStep, setResetStep] = useState(1) // 1: Telefon numarası, 2: Doğrulama kodu, 3: Yeni şifre
   const [phoneNumber, setPhoneNumber] = useState("")
@@ -34,12 +42,23 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [resetSuccess, setResetSuccess] = useState(false)
-  const [error, setError] = useState("")
+  const [resetError, setResetError] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Normalde burada API'ye istek atılır, ama şimdilik direkt yönlendirme yapıyoruz
-    router.push("/dashboard")
+
+    // NextAuth signIn fonksiyonunu credentials sağlayıcısı ile kullanıyoruz.
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    })
+
+    if (res?.error) {
+      setErrorMessage(res.error)
+    } else {
+      router.push("/dashboard")
+    }
   }
 
   const handleForgotPassword = () => {
@@ -49,22 +68,18 @@ export default function LoginPage() {
     setVerificationCode("")
     setNewPassword("")
     setConfirmPassword("")
-    setError("")
+    setResetError("")
     setResetSuccess(false)
   }
 
   const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Telefon numarası kontrolü (fake)
     if (phoneNumber.length < 10) {
-      setError("Lütfen geçerli bir telefon numarası girin")
+      setResetError("Lütfen geçerli bir telefon numarası girin")
       return
     }
-
-    // Başarılı - sonraki adıma geç
-    setError("")
+    setResetError("")
     setResetStep(2)
-    // Fake SMS gönderildi mesajı
     setTimeout(() => {
       alert(`${phoneNumber} numarasına doğrulama kodu gönderildi. (Fake: Kod 123456)`)
     }, 500)
@@ -72,35 +87,26 @@ export default function LoginPage() {
 
   const handleVerificationSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Doğrulama kodu kontrolü (fake)
     if (verificationCode !== "123456") {
-      setError("Doğrulama kodu hatalı")
+      setResetError("Doğrulama kodu hatalı")
       return
     }
-
-    // Başarılı - sonraki adıma geç
-    setError("")
+    setResetError("")
     setResetStep(3)
   }
 
   const handlePasswordResetSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Şifre kontrolü
     if (newPassword.length < 6) {
-      setError("Şifre en az 6 karakter olmalıdır")
+      setResetError("Şifre en az 6 karakter olmalıdır")
       return
     }
-
     if (newPassword !== confirmPassword) {
-      setError("Şifreler eşleşmiyor")
+      setResetError("Şifreler eşleşmiyor")
       return
     }
-
-    // Başarılı - şifre sıfırlama tamamlandı
-    setError("")
+    setResetError("")
     setResetSuccess(true)
-
-    // 3 saniye sonra modalı kapat
     setTimeout(() => {
       setForgotPasswordOpen(false)
       setResetStep(1)
@@ -110,7 +116,7 @@ export default function LoginPage() {
   const handleBackStep = () => {
     if (resetStep > 1) {
       setResetStep(resetStep - 1)
-      setError("")
+      setResetError("")
     }
   }
 
@@ -126,11 +132,13 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {errorMessage && (
+              <Alert variant="destructive">
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <label htmlFor="email" className="text-sm font-medium">
                 E-posta
               </label>
               <Input
@@ -143,10 +151,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <label htmlFor="password" className="text-sm font-medium">
                 Şifre
               </label>
               <div className="relative">
@@ -170,7 +175,9 @@ export default function LoginPage() {
                   ) : (
                     <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <span className="sr-only">{showPassword ? "Şifreyi gizle" : "Şifreyi göster"}</span>
+                  <span className="sr-only">
+                    {showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                  </span>
                 </Button>
               </div>
             </div>
@@ -212,9 +219,9 @@ export default function LoginPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {error && (
+          {resetError && (
             <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{resetError}</AlertDescription>
             </Alert>
           )}
 
@@ -268,7 +275,9 @@ export default function LoginPage() {
                   onChange={(e) => setVerificationCode(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">{phoneNumber} numarasına gönderilen 6 haneli kodu girin</p>
+                <p className="text-xs text-muted-foreground">
+                  {phoneNumber} numarasına gönderilen 6 haneli kodu girin
+                </p>
               </div>
               <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
                 <Button type="button" variant="outline" onClick={handleBackStep} className="flex items-center">
@@ -329,7 +338,7 @@ export default function LoginPage() {
                   Geri
                 </Button>
                 <Button type="submit">Şifreyi Sıfırla</Button>
-                <ModeToggle/>
+                <ModeToggle />
               </DialogFooter>
             </form>
           )}
@@ -338,4 +347,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
