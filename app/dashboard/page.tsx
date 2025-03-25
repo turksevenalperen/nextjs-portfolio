@@ -19,6 +19,9 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useSession } from "next-auth/react"
+import A from "@/components/A"
+import B from "@/components/B"
 
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
@@ -26,7 +29,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
 
-  
+
   const lineChartData = {
     labels: ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran"],
     datasets: [
@@ -40,7 +43,7 @@ export default function DashboardPage() {
     ],
   }
 
-  
+
   const barChartData = {
     labels: ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"],
     datasets: [
@@ -54,7 +57,7 @@ export default function DashboardPage() {
     ],
   }
 
-  
+
   const teamPerformance = [
     {
       name: "Yazılım Ekibi",
@@ -104,12 +107,18 @@ export default function DashboardPage() {
     },
   ]
 
+  const session = useSession();
+
+  localStorage.setItem("key", "asd")
+
+  console.log(session.data?.user?.role)
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-5">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
-      
+
+
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -180,7 +189,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-      
+
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -203,7 +212,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-   
+
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Takım Performansı</TabsTrigger>

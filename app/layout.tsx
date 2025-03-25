@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AdminModeProvider } from "@/hooks/use-admin-mode"
 import { SessionProvider } from "next-auth/react"
 
+
+
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -24,7 +26,12 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AdminModeProvider>
-            <SessionProvider>{children}</SessionProvider>
+            <SessionProvider>
+              
+              {children}
+          
+           
+             </SessionProvider>
           </AdminModeProvider>
         </ThemeProvider>
       </body>
