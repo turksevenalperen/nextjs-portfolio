@@ -36,11 +36,30 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAdminMode } from "@/hooks/use-admin-mode"
 import { signOut } from "next-auth/react"
 
+// Basit bir avatar bileşeni oluşturalım (shadcn/ui Avatar çalışmıyorsa)
+function SimpleAvatar({ name, image, className = "" }: { name: string; image?: string; className?: string }) {
+  // İsmin baş harflerini al
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+
+  return (
+    <div
+      className={`relative inline-flex items-center justify-center overflow-hidden bg-primary text-primary-foreground rounded-full h-10 w-10 text-sm font-medium ${className}`}
+    >
+      {initials}
+    </div>
+  )
+}
+
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const [useCustomAvatar, setUseCustomAvatar] = useState(true)
 
   const { isAdminMode, toggleAdminMode, adminDialogOpen, setAdminDialogOpen } = useAdminMode()
 
@@ -83,6 +102,11 @@ export function Sidebar({ className }: SidebarProps) {
     },
   ]
 
+  // Avatar bileşenini değiştirme fonksiyonu
+  const toggleAvatarComponent = () => {
+    setUseCustomAvatar((prev) => !prev)
+  }
+
   const SidebarContent = (
     <div className="flex h-full w-full flex-col">
       <div className="flex h-14 items-center border-b px-4">
@@ -120,10 +144,14 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
       <div className="mt-auto border-t p-4">
         <div className="flex items-center gap-2">
-          <Avatar>
-            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Avatar" />
-            <AvatarFallback>AY</AvatarFallback>
-          </Avatar>
+          {useCustomAvatar ? (
+            <SimpleAvatar name="Alperen Türkseven" image="/placeholder.svg?height=32&width=32" />
+          ) : (
+            <Avatar>
+              <AvatarImage src="invalid-image-url" alt="Alperen Türkseven" />
+              <AvatarFallback className="bg-primary text-primary-foreground">AT</AvatarFallback>
+            </Avatar>
+          )}
           <div className="flex flex-1 flex-col">
             <span className="text-sm font-medium">Alperen Türkseven</span>
             <span className="text-xs text-muted-foreground">Stajer</span>
@@ -201,6 +229,11 @@ export function Sidebar({ className }: SidebarProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+
+        {/* Avatar bileşenini değiştirme butonu */}
+        <div className="mt-2">
+         
         </div>
       </div>
     </div>

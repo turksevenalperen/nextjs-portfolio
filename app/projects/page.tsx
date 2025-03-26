@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, Clock, Users, CheckCircle, Plus } from "lucide-react"
 import { format } from "date-fns"
 
@@ -22,6 +22,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+// Basit bir küçük avatar bileşeni oluşturalım (shadcn/ui Avatar çalışmıyorsa)
+function SimpleAvatar({ name, image, className = "" }: { name: string; image?: string; className?: string }) {
+  // İsmin baş harflerini al
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+
+  return (
+    <div
+      className={`relative inline-flex items-center justify-center overflow-hidden bg-primary text-primary-foreground rounded-full h-6 w-6 border-2 border-background text-xs font-medium ${className}`}
+    >
+      {initials}
+    </div>
+  )
+}
 
 const projectsData = [
   {
@@ -131,12 +149,17 @@ const projectTypes = [
   "Diğer",
 ]
 
+// localStorage anahtarı
+const STORAGE_KEY = "projects-data"
+
 export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [projects, setProjects] = useState(projectsData)
+  const [projects, setProjects] = useState<typeof projectsData>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // Yeni proje için form state'i
+  // Avatar bileşeninin çalışıp çalışmadığını kontrol etmek için state
+  const [useCustomAvatar, setUseCustomAvatar] = useState(true)
+
   const [newProject, setNewProject] = useState({
     name: "",
     description: "",
@@ -146,7 +169,38 @@ export default function ProjectsPage() {
     dueDate: new Date(),
   })
 
-  // Arama sorgusuna göre projeleri filtreliyoruz
+  // Sayfa yüklendiğinde localStorage'dan verileri al
+  useEffect(() => {
+    const loadProjectsFromStorage = () => {
+      try {
+        const storedProjects = localStorage.getItem(STORAGE_KEY)
+
+        if (storedProjects) {
+          // localStorage'dan veri varsa onu kullan
+          setProjects(JSON.parse(storedProjects))
+        } else {
+          // localStorage'da veri yoksa varsayılan veriyi kullan ve kaydet
+          setProjects(projectsData)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(projectsData))
+        }
+      } catch (error) {
+        console.error("Proje verileri yüklenirken hata oluştu:", error)
+        // Hata durumunda varsayılan veriyi kullan
+        setProjects(projectsData)
+      }
+    }
+
+    loadProjectsFromStorage()
+  }, [])
+
+  // Proje verileri değiştiğinde localStorage'ı güncelle
+  useEffect(() => {
+    // İlk render'da boş dizi olmaması için kontrol
+    if (projects.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
+    }
+  }, [projects])
+
   const filteredProjects = projects.filter(
     (project) =>
       project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -199,7 +253,7 @@ export default function ProjectsPage() {
 
     // Yeni proje oluşturma
     const project = {
-      id: projects.length + 1,
+      id: projects.length > 0 ? Math.max(...projects.map((p) => p.id)) + 1 : 1,
       name: newProject.name,
       description: `${newProject.type} projesi: ${newProject.description}`,
       status: "Planlama",
@@ -224,6 +278,11 @@ export default function ProjectsPage() {
     setIsDialogOpen(false)
   }
 
+  // Avatar bileşenini değiştirme butonu
+  const toggleAvatarComponent = () => {
+    setUseCustomAvatar((prev) => !prev)
+  }
+
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-5">
@@ -245,6 +304,9 @@ export default function ProjectsPage() {
             </Button>
           </div>
         </div>
+
+        
+        
 
         {/* Proje Kartları */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -284,12 +346,27 @@ export default function ProjectsPage() {
                   <Users className="h-4 w-4" />
                   <span>Ekip:</span>
                   <div className="flex -space-x-2">
-                    {project.team.map((member, index) => (
-                      <Avatar key={index} className="h-6 w-6 border-2 border-background">
-                        <AvatarImage src={member.image} alt={member.name} />
-                        <AvatarFallback>{member.name.substring(0, 2)}</AvatarFallback>
-                      </Avatar>
-                    ))}
+                    {project.team.map((member, index) =>
+                      useCustomAvatar ? (
+                        <SimpleAvatar
+                          key={index}
+                          name={member.name}
+                          image={member.image}
+                          className="border-2 border-background"
+                        />
+                      ) : (
+                        <Avatar key={index} className="h-6 w-6 border-2 border-background">
+                          <AvatarImage src="invalid-image-url" alt={member.name} />
+                          <AvatarFallback className="text-xs">
+                            {member.name
+                              .split(" ")
+                              .map((name) => name[0])
+                              .join("")
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      ),
+                    )}
                   </div>
                 </div>
 

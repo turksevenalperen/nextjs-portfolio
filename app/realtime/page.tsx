@@ -40,6 +40,24 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import { useAdminMode } from "@/hooks/use-admin-mode"
 
+// Basit bir orta boy avatar bileşeni oluşturalım (shadcn/ui Avatar çalışmıyorsa)
+function SimpleAvatar({ name, image, className = "" }: { name: string; image?: string; className?: string }) {
+  // İsmin baş harflerini al
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+
+  return (
+    <div
+      className={`relative inline-flex items-center justify-center overflow-hidden bg-primary text-primary-foreground rounded-full h-8 w-8 text-sm font-medium ${className}`}
+    >
+      {initials}
+    </div>
+  )
+}
+
 // Aktivite tipi
 type Activity = {
   id: number
@@ -189,6 +207,9 @@ export default function RealtimePage() {
   const [adminError, setAdminError] = useState("")
   const pendingEditRef = useRef<{ rowId: number; column: string; value: string } | null>(null)
 
+  // Avatar bileşeninin çalışıp çalışmadığını kontrol etmek için state
+  const [useCustomAvatar, setUseCustomAvatar] = useState(true)
+
   const { isAdminMode } = useAdminMode()
 
   const handleEditClick = (rowId: number, column: string, currentValue: string) => {
@@ -255,6 +276,11 @@ export default function RealtimePage() {
     setEditValue("")
   }
 
+  // Avatar bileşenini değiştirme butonu
+  const toggleAvatarComponent = () => {
+    setUseCustomAvatar((prev) => !prev)
+  }
+
   // Tablo sütunları
   const columns: ColumnDef<Activity>[] = [
     {
@@ -264,10 +290,20 @@ export default function RealtimePage() {
         const user = row.getValue("user") as Activity["user"]
         return (
           <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={user.image} alt={user.name} />
-              <AvatarFallback>{user.name.substring(0, 2)}</AvatarFallback>
-            </Avatar>
+            {useCustomAvatar ? (
+              <SimpleAvatar name={user.name} image={user.image} />
+            ) : (
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="invalid-image-url" alt={user.name} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {user.name
+                    .split(" ")
+                    .map((name) => name[0])
+                    .join("")
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            )}
             <div className="flex flex-col">
               <span className="font-medium">{user.name}</span>
               <span className="text-xs text-muted-foreground">{user.department}</span>
@@ -519,6 +555,12 @@ export default function RealtimePage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
+
+        {/* Avatar bileşenini değiştirme butonu */}
+        <div className="mb-4">
+          
+        
         </div>
 
         <div className="rounded-md border">

@@ -22,6 +22,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useSession } from "next-auth/react"
 import A from "@/components/A"
 import B from "@/components/B"
+import BearCounter from "../store/BearCounter"
+import Controls from "../store/Controls"
+
 
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
@@ -109,15 +112,13 @@ export default function DashboardPage() {
 
   const session = useSession();
 
-  localStorage.setItem("key", "asd")
+
 
   console.log(session.data?.user?.role)
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-5">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-
-
 
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card>

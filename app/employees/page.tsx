@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, Plus } from "lucide-react"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
@@ -23,7 +23,40 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAdminMode } from "@/hooks/use-admin-mode"
 
-// Örnek çalışan verileri
+// localStorage anahtarı
+const STORAGE_KEY = "employees-data"
+
+// Basit bir avatar bileşeni oluşturalım (shadcn/ui Avatar çalışmıyorsa)
+function SimpleAvatar({ name, image }: { name: string; image?: string }) {
+  // İsmin baş harflerini al
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+
+  return (
+    <div className="relative inline-flex items-center justify-center overflow-hidden bg-primary text-primary-foreground rounded-full h-16 w-16 sm:h-20 sm:w-20 text-lg font-medium">
+      {initials}
+    </div>
+  )
+}
+
+// Büyük detay avatarı
+function DetailAvatar({ name, image }: { name: string; image?: string }) {
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+
+  return (
+    <div className="relative inline-flex items-center justify-center overflow-hidden bg-primary text-primary-foreground rounded-full h-24 w-24 text-xl font-medium">
+      {initials}
+    </div>
+  )
+}
+
 const employeesData = [
   {
     id: 1,
@@ -126,7 +159,10 @@ export default function EmployeesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedEmployee, setSelectedEmployee] = useState<(typeof employeesData)[0] | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [employees, setEmployees] = useState(employeesData)
+  const [employees, setEmployees] = useState<typeof employeesData>([])
+
+  // Avatar bileşeninin çalışıp çalışmadığını kontrol etmek için state
+  const [useCustomAvatar, setUseCustomAvatar] = useState(true)
 
   // Admin doğrulama için state'ler
   const [adminDialogOpen, setAdminDialogOpen] = useState(false)
@@ -151,6 +187,38 @@ export default function EmployeesPage() {
 
   const { isAdminMode } = useAdminMode()
 
+  // Sayfa yüklendiğinde localStorage'dan verileri al
+  useEffect(() => {
+    const loadEmployeesFromStorage = () => {
+      try {
+        const storedEmployees = localStorage.getItem(STORAGE_KEY)
+
+        if (storedEmployees) {
+          // localStorage'dan veri varsa onu kullan
+          setEmployees(JSON.parse(storedEmployees))
+        } else {
+          // localStorage'da veri yoksa varsayılan veriyi kullan ve kaydet
+          setEmployees(employeesData)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(employeesData))
+        }
+      } catch (error) {
+        console.error("Çalışan verileri yüklenirken hata oluştu:", error)
+        // Hata durumunda varsayılan veriyi kullan
+        setEmployees(employeesData)
+      }
+    }
+
+    loadEmployeesFromStorage()
+  }, [])
+
+  // Çalışan verileri değiştiğinde localStorage'ı güncelle
+  useEffect(() => {
+    // İlk render'da boş dizi olmaması için kontrol
+    if (employees.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(employees))
+    }
+  }, [employees])
+
   // Arama sorgusuna göre çalışanları filtreliyoruz
   const filteredEmployees = employees.filter(
     (employee) =>
@@ -170,7 +238,7 @@ export default function EmployeesPage() {
       setIsAddEmployeeOpen(true)
       setIsEditing(false)
       setNewEmployee({
-        id: employees.length + 1,
+        id: employees.length > 0 ? Math.max(...employees.map((e) => e.id)) + 1 : 1,
         name: "",
         position: "",
         department: "",
@@ -202,7 +270,7 @@ export default function EmployeesPage() {
         setIsAddEmployeeOpen(true)
         setIsEditing(false)
         setNewEmployee({
-          id: employees.length + 1,
+          id: employees.length > 0 ? Math.max(...employees.map((e) => e.id)) + 1 : 1,
           name: "",
           position: "",
           department: "",
@@ -275,6 +343,11 @@ export default function EmployeesPage() {
     setNewEmployee((prev) => ({ ...prev, [name]: value }))
   }
 
+  // Avatar bileşenini değiştirme butonu
+  const toggleAvatarComponent = () => {
+    setUseCustomAvatar((prev) => !prev)
+  }
+
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-5">
@@ -297,6 +370,8 @@ export default function EmployeesPage() {
           </div>
         </div>
 
+       
+
         {/* Çalışan Kartları */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredEmployees.map((employee) => (
@@ -307,10 +382,20 @@ export default function EmployeesPage() {
             >
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col items-center gap-4">
-                  <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
-                    <AvatarImage src={employee.image} alt={employee.name} />
-                    <AvatarFallback>{employee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  {useCustomAvatar ? (
+                    <SimpleAvatar name={employee.name} image={employee.image} />
+                  ) : (
+                    <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+                      <AvatarImage src="invalid-image-url" alt={employee.name} />
+                      <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                        {employee.name
+                          .split(" ")
+                          .map((name) => name[0])
+                          .join("")
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                   <div className="space-y-1 text-center">
                     <h3 className="font-medium">{employee.name}</h3>
                     <p className="text-sm text-muted-foreground">{employee.position}</p>
@@ -332,10 +417,20 @@ export default function EmployeesPage() {
                   <DialogDescription>{selectedEmployee.position}</DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col sm:flex-row gap-4 py-4">
-                  <Avatar className="h-24 w-24 mx-auto sm:mx-0">
-                    <AvatarImage src={selectedEmployee.image} alt={selectedEmployee.name} />
-                    <AvatarFallback>{selectedEmployee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  {useCustomAvatar ? (
+                    <DetailAvatar name={selectedEmployee.name} image={selectedEmployee.image} />
+                  ) : (
+                    <Avatar className="h-24 w-24 mx-auto sm:mx-0">
+                      <AvatarImage src="invalid-image-url" alt={selectedEmployee.name} />
+                      <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                        {selectedEmployee.name
+                          .split(" ")
+                          .map((name) => name[0])
+                          .join("")
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                   <div className="space-y-3">
                     <div>
                       <h4 className="text-sm font-medium">Departman</h4>

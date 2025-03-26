@@ -1,8 +1,8 @@
-import useUserStore from "./userStore";
+import useUserStore from "./userStore"; 
 
 export default function UserList() {
   const users = useUserStore((state) => state.users);
-  const fetchUsers = useUserStore((state) => state.fethUsers);
+  const fetchUsers = useUserStore((state) => state.fetchUser);
 
   return (
     <div>

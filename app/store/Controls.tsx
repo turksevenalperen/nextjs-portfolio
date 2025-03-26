@@ -1,15 +1,17 @@
-
 import React from 'react'
 import bearStore from './bearStore'
 
 const Controls = () => {
 
-    const güncelle = bearStore((state)=> state.guncelleme)
-    const resetleme = bearStore((state) => state.resetleme)
+    const artırmaa = bearStore((state) => state.artırma )
+    const sıfırlama = bearStore((state) => state.resetle)
   return (
     <div>
-        <button onClick={güncelle} >artır</button>
-        <button onClick={resetleme}>sıfırla</button>
+
+        <button onClick={artırmaa}> artır </button>
+        <button onClick={sıfırlama}>reset</button>
+
+
     </div>
   )
 }

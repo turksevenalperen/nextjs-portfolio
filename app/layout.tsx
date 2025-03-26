@@ -24,7 +24,11 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange>
           <AdminModeProvider>
             <SessionProvider>
               
@@ -33,7 +37,8 @@ export default function RootLayout({
            
              </SessionProvider>
           </AdminModeProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        
       </body>
     </html>
   )
