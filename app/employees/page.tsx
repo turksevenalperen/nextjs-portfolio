@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Search, Plus } from "lucide-react"
+import { Search } from "lucide-react"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,10 +18,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAdminMode } from "@/hooks/use-admin-mode"
+import { useAuth } from "@/hooks/use-auth"
+import { Plus } from "lucide-react"
 
 // localStorage anahtarı
 const STORAGE_KEY = "employees-data"
@@ -164,13 +165,6 @@ export default function EmployeesPage() {
   // Avatar bileşeninin çalışıp çalışmadığını kontrol etmek için state
   const [useCustomAvatar, setUseCustomAvatar] = useState(true)
 
-  // Admin doğrulama için state'ler
-  const [adminDialogOpen, setAdminDialogOpen] = useState(false)
-  const [adminPassword, setAdminPassword] = useState("")
-  const [adminError, setAdminError] = useState("")
-  const [adminAction, setAdminAction] = useState<"add" | "edit">("add")
-  const [employeeToEdit, setEmployeeToEdit] = useState<(typeof employeesData)[0] | null>(null)
-
   // Çalışan ekleme/düzenleme için state'ler
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -186,6 +180,7 @@ export default function EmployeesPage() {
   })
 
   const { isAdminMode } = useAdminMode()
+  const { isAdmin } = useAuth()
 
   // Sayfa yüklendiğinde localStorage'dan verileri al
   useEffect(() => {
@@ -233,80 +228,25 @@ export default function EmployeesPage() {
   }
 
   const handleAddEmployeeClick = () => {
-    if (isAdminMode) {
-      // Admin modunda doğrudan formu aç
-      setIsAddEmployeeOpen(true)
-      setIsEditing(false)
-      setNewEmployee({
-        id: employees.length > 0 ? Math.max(...employees.map((e) => e.id)) + 1 : 1,
-        name: "",
-        position: "",
-        department: "",
-        email: "",
-        phone: "",
-        image: "/placeholder.svg?height=300&width=300",
-        description: "",
-      })
-    } else {
-      // Admin modunda değilse doğrulama iste
-      setAdminAction("add")
-      setAdminDialogOpen(true)
-      setAdminPassword("")
-      setAdminError("")
-    }
-  }
-
-  const handleAdminSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Admin şifresi kontrolü (fake)
-    if (adminPassword === "admin123") {
-      // Şifre doğru
-      setAdminDialogOpen(false)
-      setAdminError("")
-
-      if (adminAction === "add") {
-        // Çalışan ekleme formunu aç
-        setIsAddEmployeeOpen(true)
-        setIsEditing(false)
-        setNewEmployee({
-          id: employees.length > 0 ? Math.max(...employees.map((e) => e.id)) + 1 : 1,
-          name: "",
-          position: "",
-          department: "",
-          email: "",
-          phone: "",
-          image: "/placeholder.svg?height=300&width=300",
-          description: "",
-        })
-      } else if (adminAction === "edit" && employeeToEdit) {
-        // Çalışan düzenleme formunu aç
-        setIsAddEmployeeOpen(true)
-        setIsEditing(true)
-        setNewEmployee(employeeToEdit)
-        setIsDialogOpen(false)
-      }
-    } else {
-      // Şifre yanlış
-      setAdminError("Yanlış şifre. Lütfen tekrar deneyin.")
-    }
+    setIsAddEmployeeOpen(true)
+    setIsEditing(false)
+    setNewEmployee({
+      id: employees.length > 0 ? Math.max(...employees.map((e) => e.id)) + 1 : 1,
+      name: "",
+      position: "",
+      department: "",
+      email: "",
+      phone: "",
+      image: "/placeholder.svg?height=300&width=300",
+      description: "",
+    })
   }
 
   const handleEditEmployee = (employee: (typeof employeesData)[0]) => {
-    if (isAdminMode) {
-      // Admin modunda doğrudan düzenleme formunu aç
-      setIsAddEmployeeOpen(true)
-      setIsEditing(true)
-      setNewEmployee(employee)
-      setIsDialogOpen(false)
-    } else {
-      // Admin modunda değilse doğrulama iste
-      setAdminAction("edit")
-      setEmployeeToEdit(employee)
-      setAdminDialogOpen(true)
-      setAdminPassword("")
-      setAdminError("")
-    }
+    setIsAddEmployeeOpen(true)
+    setIsEditing(true)
+    setNewEmployee(employee)
+    setIsDialogOpen(false)
   }
 
   const handleSaveEmployee = (e: React.FormEvent) => {
@@ -348,6 +288,9 @@ export default function EmployeesPage() {
     setUseCustomAvatar((prev) => !prev)
   }
 
+  // Admin yetkisi kontrolü
+  const canEdit = isAdmin && isAdminMode
+
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-5">
@@ -363,14 +306,23 @@ export default function EmployeesPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button onClick={handleAddEmployeeClick} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              <span>Çalışan Ekle</span>
-            </Button>
+
+            {/* Sadece admin ve admin modunda ise Çalışan Ekle butonu göster */}
+            {canEdit && (
+              <Button onClick={handleAddEmployeeClick} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span>Çalışan Ekle</span>
+              </Button>
+            )}
           </div>
         </div>
 
-       
+        {/* Avatar bileşenini değiştirme butonu */}
+        <div className="mb-4">
+          <Button onClick={toggleAvatarComponent} variant="outline">
+            {useCustomAvatar ? "Shadcn Avatar Kullan" : "Özel Avatar Kullan"}
+          </Button>
+        </div>
 
         {/* Çalışan Kartları */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -450,50 +402,17 @@ export default function EmployeesPage() {
                     </div>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => handleEditEmployee(selectedEmployee)}>
-                    Düzenle
-                  </Button>
-                </DialogFooter>
+
+                {/* Sadece admin ve admin modunda ise Düzenle butonu göster */}
+                {canEdit && (
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => handleEditEmployee(selectedEmployee)}>
+                      Düzenle
+                    </Button>
+                  </DialogFooter>
+                )}
               </>
             )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Admin Şifresi Modalı */}
-        <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Admin Doğrulama</DialogTitle>
-              <DialogDescription>Bu işlemi gerçekleştirmek için admin şifresini girin</DialogDescription>
-            </DialogHeader>
-
-            {adminError && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{adminError}</AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={handleAdminSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="adminPassword">Admin Şifresi</Label>
-                <Input
-                  id="adminPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">(Fake: Şifre "admin123")</p>
-              </div>
-              <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-                <Button type="button" variant="outline" onClick={() => setAdminDialogOpen(false)}>
-                  İptal
-                </Button>
-                <Button type="submit">Doğrula</Button>
-              </DialogFooter>
-            </form>
           </DialogContent>
         </Dialog>
 

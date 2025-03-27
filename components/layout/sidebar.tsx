@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAdminMode } from "@/hooks/use-admin-mode"
+import { useAuth } from "@/hooks/use-auth"
 import { signOut } from "next-auth/react"
 
 // Basit bir avatar bileşeni oluşturalım (shadcn/ui Avatar çalışmıyorsa)
@@ -61,7 +62,8 @@ export function Sidebar({ className }: SidebarProps) {
   const [open, setOpen] = useState(false)
   const [useCustomAvatar, setUseCustomAvatar] = useState(true)
 
-  const { isAdminMode, toggleAdminMode, adminDialogOpen, setAdminDialogOpen } = useAdminMode()
+  const { isAdminMode, toggleAdminMode } = useAdminMode()
+  const { isAdmin, user } = useAuth()
 
   const routes = [
     {
@@ -107,6 +109,10 @@ export function Sidebar({ className }: SidebarProps) {
     setUseCustomAvatar((prev) => !prev)
   }
 
+  // Kullanıcı adını al
+  const userName = user?.name || "Kullanıcı"
+  const userRole = user?.role === "admin" ? "Yönetici" : "Stajer"
+
   const SidebarContent = (
     <div className="flex h-full w-full flex-col">
       <div className="flex h-14 items-center border-b px-4">
@@ -145,37 +151,50 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="mt-auto border-t p-4">
         <div className="flex items-center gap-2">
           {useCustomAvatar ? (
-            <SimpleAvatar name="Alperen Türkseven" image="/placeholder.svg?height=32&width=32" />
+            <SimpleAvatar name={userName} image="/placeholder.svg?height=32&width=32" />
           ) : (
             <Avatar>
-              <AvatarImage src="invalid-image-url" alt="Alperen Türkseven" />
-              <AvatarFallback className="bg-primary text-primary-foreground">AT</AvatarFallback>
+              <AvatarImage src="invalid-image-url" alt={userName} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {userName
+                  .split(" ")
+                  .map((name) => name[0])
+                  .join("")
+                  .toUpperCase()}
+              </AvatarFallback>
             </Avatar>
           )}
           <div className="flex flex-1 flex-col">
-            <span className="text-sm font-medium">Alperen Türkseven</span>
-            <span className="text-xs text-muted-foreground">Stajer</span>
+            <span className="text-sm font-medium">{userName}</span>
+            <span className="text-xs text-muted-foreground">{userRole}</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            onClick={toggleAdminMode} // Burada toggleAdminMode kullanıyoruz
-            title={isAdminMode ? "Admin Modunu Kapat" : "Admin Moduna Geç"}
-          >
-            {isAdminMode ? (
-              <LockOpen className="h-5 w-5 text-green-500" />
-            ) : (
-              <Lock className="h-5 w-5 text-muted-foreground" />
-            )}
-            {isAdminMode && (
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+
+          {/* Sadece admin rolüne sahip kullanıcılar için kilit simgesi göster */}
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={toggleAdminMode}
+              title={isAdminMode ? "Admin Modunu Kapat" : "Admin Moduna Geç"}
+            >
+              {isAdminMode ? (
+                <LockOpen className="h-5 w-5 text-green-500" />
+              ) : (
+                <Lock className="h-5 w-5 text-muted-foreground" />
+              )}
+              {isAdminMode && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+              )}
+              <span className="sr-only">
+                {isAdminMode ? "Admin Modu Aktif (Kapatmak için tıklayın)" : "Admin Modu"}
               </span>
-            )}
-            <span className="sr-only">{isAdminMode ? "Admin Modu Aktif (Kapatmak için tıklayın)" : "Admin Modu"}</span>
-          </Button>
+            </Button>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -216,7 +235,7 @@ export function Sidebar({ className }: SidebarProps) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {isAdminMode && (
+              {isAdmin && isAdminMode && (
                 <>
                   <DropdownMenuItem onClick={() => toggleAdminMode()}>
                     <span>Admin Modundan Çık</span>
@@ -233,7 +252,9 @@ export function Sidebar({ className }: SidebarProps) {
 
         {/* Avatar bileşenini değiştirme butonu */}
         <div className="mt-2">
-         
+          <Button onClick={toggleAvatarComponent} variant="outline" size="sm" className="w-full">
+            {useCustomAvatar ? "Shadcn Avatar Kullan" : "Özel Avatar Kullan"}
+          </Button>
         </div>
       </div>
     </div>

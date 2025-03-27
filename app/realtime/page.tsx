@@ -1,9 +1,7 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useRef } from "react"
-import { Search, ArrowUpDown, ChevronDown, Edit, Save, X } from "lucide-react"
+import { Search, ArrowUpDown, ChevronDown } from "lucide-react"
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -28,17 +26,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-
 import { useAdminMode } from "@/hooks/use-admin-mode"
+import { useAuth } from "@/hooks/use-auth"
+import { Edit, Save, X } from "lucide-react"
 
 // Basit bir orta boy avatar bileşeni oluşturalım (shadcn/ui Avatar çalışmıyorsa)
 function SimpleAvatar({ name, image, className = "" }: { name: string; image?: string; className?: string }) {
@@ -202,48 +192,22 @@ export default function RealtimePage() {
   const [activities, setActivities] = useState<Activity[]>(activitiesData)
   const [editingCell, setEditingCell] = useState<{ rowId: number; column: string } | null>(null)
   const [editValue, setEditValue] = useState<string>("")
-  const [adminDialogOpen, setAdminDialogOpen] = useState(false)
-  const [adminPassword, setAdminPassword] = useState("")
-  const [adminError, setAdminError] = useState("")
   const pendingEditRef = useRef<{ rowId: number; column: string; value: string } | null>(null)
 
   // Avatar bileşeninin çalışıp çalışmadığını kontrol etmek için state
   const [useCustomAvatar, setUseCustomAvatar] = useState(true)
 
   const { isAdminMode } = useAdminMode()
+  const { isAdmin } = useAuth()
+
+  // Admin yetkisi kontrolü
+  const canEdit = isAdmin && isAdminMode
 
   const handleEditClick = (rowId: number, column: string, currentValue: string) => {
-    if (isAdminMode) {
+    if (canEdit) {
       // Admin modunda doğrudan düzenlemeye başla
       setEditingCell({ rowId, column })
       setEditValue(currentValue)
-    } else {
-      // Admin modunda değilse doğrulama iste
-      pendingEditRef.current = { rowId, column, value: currentValue }
-      setAdminDialogOpen(true)
-      setAdminPassword("")
-      setAdminError("")
-    }
-  }
-
-  const handleAdminSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Admin şifresi kontrolü (fake)
-    if (adminPassword === "admin123") {
-      // Şifre doğru, düzenlemeye izin ver
-      setAdminDialogOpen(false)
-      setAdminError("")
-
-      if (pendingEditRef.current) {
-        const { rowId, column, value } = pendingEditRef.current
-        setEditingCell({ rowId, column })
-        setEditValue(value)
-        pendingEditRef.current = null
-      }
-    } else {
-      // Şifre yanlış
-      setAdminError("Yanlış şifre. Lütfen tekrar deneyin.")
     }
   }
 
@@ -343,14 +307,16 @@ export default function RealtimePage() {
         return (
           <div className="flex items-center justify-between">
             <span>{action}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
-              onClick={() => handleEditClick(rowId, "action", action)}
-            >
-              <Edit className="h-3 w-3" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
+                onClick={() => handleEditClick(rowId, "action", action)}
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         )
       },
@@ -392,14 +358,16 @@ export default function RealtimePage() {
             >
               {status}
             </Badge>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
-              onClick={() => handleEditClick(rowId, "status", status)}
-            >
-              <Edit className="h-3 w-3" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
+                onClick={() => handleEditClick(rowId, "status", status)}
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         )
       },
@@ -434,14 +402,16 @@ export default function RealtimePage() {
         return (
           <div className="flex items-center justify-between">
             <span>{time || "---"}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
-              onClick={() => handleEditClick(rowId, "time", time || "")}
-            >
-              <Edit className="h-3 w-3" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
+                onClick={() => handleEditClick(rowId, "time", time || "")}
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         )
       },
@@ -477,14 +447,16 @@ export default function RealtimePage() {
         return (
           <div className="flex items-center justify-between">
             <span>{duration || "---"}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
-              onClick={() => handleEditClick(rowId, "duration", duration || "")}
-            >
-              <Edit className="h-3 w-3" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
+                onClick={() => handleEditClick(rowId, "duration", duration || "")}
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         )
       },
@@ -559,8 +531,9 @@ export default function RealtimePage() {
 
         {/* Avatar bileşenini değiştirme butonu */}
         <div className="mb-4">
-          
-        
+          <Button onClick={toggleAvatarComponent} variant="outline">
+            {useCustomAvatar ? "Shadcn Avatar Kullan" : "Özel Avatar Kullan"}
+          </Button>
         </div>
 
         <div className="rounded-md border">
@@ -612,44 +585,6 @@ export default function RealtimePage() {
           </Button>
         </div>
       </div>
-      {/* Admin Şifresi Modalı */}
-      <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Admin Doğrulama</DialogTitle>
-            <DialogDescription>Değişiklik yapmak için admin şifresini girin</DialogDescription>
-          </DialogHeader>
-
-          {adminError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{adminError}</AlertDescription>
-            </Alert>
-          )}
-
-          <form onSubmit={handleAdminSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="adminPassword" className="text-sm font-medium">
-                Admin Şifresi
-              </label>
-              <Input
-                id="adminPassword"
-                type="password"
-                placeholder="••••••••"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                required
-              />
-              <p className="text-xs text-muted-foreground">(Fake: Şifre "admin123")</p>
-            </div>
-            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-              <Button type="button" variant="outline" onClick={() => setAdminDialogOpen(false)}>
-                İptal
-              </Button>
-              <Button type="submit">Doğrula</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   )
 }
