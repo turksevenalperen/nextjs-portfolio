@@ -20,8 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useSession } from "next-auth/react"
-import A from "@/components/A"
-import B from "@/components/B"
+import { auth } from "@/auth"
 
 
 
@@ -42,11 +41,10 @@ export default function DashboardPage() {
         data: [65, 59, 80, 81, 56, 55],
         fill: false,
         borderColor: "rgb(75, 192, 192)",
-        tension: 0.1,
+        tension: 0.2,
       },
     ],
   }
-
 
   const barChartData = {
     labels: ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"],
@@ -111,16 +109,11 @@ export default function DashboardPage() {
     },
   ]
 
-  const session = useSession();
-
-
-
-  console.log(session.data?.user?.role)
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-5">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-             
+
 
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -132,7 +125,7 @@ export default function DashboardPage() {
               <div className="text-2xl font-bold">24</div>
               <p className="text-xs text-muted-foreground">
                 <span className="text-green-500 flex items-center">
-               
+
                   <ArrowUp className="mr-1 h-3 w-3" />
                   +2
                 </span>{" "}
@@ -140,8 +133,8 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
-         
-          
+
+
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -240,13 +233,13 @@ export default function DashboardPage() {
                         <div className="text-sm text-muted-foreground">{team.progress}%</div>
                       </div>
                       <div className="h-2 w-full rounded-full bg-secondary">
-                      
+
                       </div>
                       <div className="flex justify-between text-sm text-muted-foreground">
                         <div>{team.members} üye</div>
                         <div>{team.tasks} görev</div>
                         <div>{team.progress}</div>
-                        
+
                       </div>
                     </div>
                   ))}

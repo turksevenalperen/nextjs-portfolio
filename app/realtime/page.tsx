@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { Search, ArrowUpDown, ChevronDown } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, ArrowUpDown, ChevronDown, Wifi, WifiOff } from "lucide-react"
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -26,26 +26,22 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useAdminMode } from "@/hooks/use-admin-mode"
-import { useAuth } from "@/hooks/use-auth"
 import { Edit, Save, X } from "lucide-react"
+import type { AktifUygulama, AktiflikDurumu } from "@/lib/types"
+import { useAktifUygulamalar } from "@/lib/socket-client"
 
-// Basit bir orta boy avatar bileşeni oluşturalım (shadcn/ui Avatar çalışmıyorsa)
-function SimpleAvatar({ name, image, className = "" }: { name: string; image?: string; className?: string }) {
-  // İsmin baş harflerini al
-  const initials = name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
+interface RealtimePageProps {
+  initialAktifUygulamalar?: AktifUygulama[]
+  initialAktiflikDurumu?: AktiflikDurumu[]
+}
 
-  return (
-    <div
-      className={`relative inline-flex items-center justify-center overflow-hidden bg-primary text-primary-foreground rounded-full h-8 w-8 text-sm font-medium ${className}`}
-    >
-      {initials}
-    </div>
-  )
+// Etkinlik süresi tipi
+type EtkinlikSuresi = {
+  id: number
+  username: string
+  date: string
+  toplamSure: number
+  formattedSure: string
 }
 
 // Aktivite tipi
@@ -59,149 +55,96 @@ type Activity = {
   action: string
   status: "Online" | "Away" | "Offline"
   time: string
-  duration: string
+  date: string
+  userId: number // Durum güncellemesi için kullanılacak
 }
 
-// Örnek aktivite verileri
-const activitiesData: Activity[] = [
-  {
-    id: 1,
-    user: {
-      name: "Ahmet Yılmaz",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Teknoloji",
-    },
-    action: "Kod geliştirme",
-    status: "Online",
-    time: "10:30",
-    duration: "2 saat 15 dakika",
-  },
-  {
-    id: 2,
-    user: {
-      name: "Ayşe Demir",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Tasarım",
-    },
-    action: "Arayüz tasarımı",
-    status: "Online",
-    time: "09:45",
-    duration: "3 saat 30 dakika",
-  },
-  {
-    id: 3,
-    user: {
-      name: "Mehmet Kaya",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Yönetim",
-    },
-    action: "Toplantı",
-    status: "Away",
-    time: "11:00",
-    duration: "1 saat",
-  },
-  {
-    id: 4,
-    user: {
-      name: "Zeynep Şahin",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Veri",
-    },
-    action: "Veri analizi",
-    status: "Online",
-    time: "10:15",
-    duration: "2 saat 45 dakika",
-  },
-  {
-    id: 5,
-    user: {
-      name: "Ali Öztürk",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Teknoloji",
-    },
-    action: "Mobil uygulama geliştirme",
-    status: "Offline",
-    time: "08:30",
-    duration: "0 saat",
-  },
-  {
-    id: 6,
-    user: {
-      name: "Fatma Yıldız",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "İK",
-    },
-    action: "İşe alım görüşmesi",
-    status: "Away",
-    time: "14:00",
-    duration: "45 dakika",
-  },
-  {
-    id: 7,
-    user: {
-      name: "Mustafa Çelik",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Pazarlama",
-    },
-    action: "Kampanya planlaması",
-    status: "Online",
-    time: "11:30",
-    duration: "1 saat 30 dakika",
-  },
-  {
-    id: 8,
-    user: {
-      name: "Elif Aydın",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Satış",
-    },
-    action: "Müşteri görüşmesi",
-    status: "Online",
-    time: "13:15",
-    duration: "1 saat 15 dakika",
-  },
-  {
-    id: 9,
-    user: {
-      name: "Hasan Kara",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Teknoloji",
-    },
-    action: "Hata düzeltme",
-    status: "Online",
-    time: "10:45",
-    duration: "2 saat",
-  },
-  {
-    id: 10,
-    user: {
-      name: "Seda Arslan",
-      image: "/placeholder.svg?height=32&width=32",
-      department: "Tasarım",
-    },
-    action: "Logo tasarımı",
-    status: "Away",
-    time: "09:30",
-    duration: "3 saat",
-  },
-]
-
-export default function RealtimePage() {
+export default function RealtimePage({ initialAktifUygulamalar, initialAktiflikDurumu }: RealtimePageProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [activities, setActivities] = useState<Activity[]>(activitiesData)
+  const [activities, setActivities] = useState<Activity[]>([])
   const [editingCell, setEditingCell] = useState<{ rowId: number; column: string } | null>(null)
   const [editValue, setEditValue] = useState<string>("")
-  const pendingEditRef = useRef<{ rowId: number; column: string; value: string } | null>(null)
+  const [etkinlikSuresi, setEtkinlikSuresi] = useState<EtkinlikSuresi[]>([])
+
+  // WebSocket üzerinden aktif uygulamaları ve durumları dinle
+  const { aktifUygulamalar, aktiflikDurumu, isConnected, updateDurum } = useAktifUygulamalar(
+    initialAktifUygulamalar,
+    initialAktiflikDurumu,
+  )
+
+  // Etkinlik sürelerini API'den al
+  useEffect(() => {
+    const fetchEtkinlikSuresi = async () => {
+      try {
+        const response = await fetch("/api/etkinlik-suresi")
+        if (response.ok) {
+          const data = await response.json()
+          setEtkinlikSuresi(data)
+        }
+      } catch (error) {
+        console.error("Etkinlik süresi alınamadı:", error)
+      }
+    }
+
+    fetchEtkinlikSuresi()
+
+    // Her 5 saniyede bir etkinlik sürelerini güncelle
+    const intervalId = setInterval(fetchEtkinlikSuresi, 5000)
+
+    return () => clearInterval(intervalId)
+  }, [])
 
   // Avatar bileşeninin çalışıp çalışmadığını kontrol etmek için state
   const [useCustomAvatar, setUseCustomAvatar] = useState(true)
 
-  const { isAdminMode } = useAdminMode()
-  const { isAdmin } = useAuth()
+  // Mock hooks for development
+  const useAdminModeMock = () => ({ isAdminMode: true })
+  const useAuthMock = () => ({ isAdmin: true })
+
+  const { isAdminMode } = useAdminModeMock()
+  const { isAdmin } = useAuthMock()
 
   // Admin yetkisi kontrolü
   const canEdit = isAdmin && isAdminMode
+
+  // Veritabanından gelen verileri aktivite formatına dönüştür
+  useEffect(() => {
+    console.log("Veriler değişti:", {
+      aktifUygulamalar: aktifUygulamalar?.length,
+      aktiflikDurumu: aktiflikDurumu?.length,
+      etkinlikSuresi: etkinlikSuresi?.length,
+    })
+
+    if (aktifUygulamalar && aktifUygulamalar.length > 0) {
+      // Aktif uygulamaları, durumları ve etkinlik sürelerini birleştir
+      const mappedActivities = aktifUygulamalar.map((item) => {
+        // Kullanıcının durumunu bul
+        const durumBilgisi = aktiflikDurumu?.find((durum) => durum.username === item.username) || {
+          durum: "Offline",
+        }
+
+        // Kullanıcının etkinlik süresini bul
+        const sureBilgisi = etkinlikSuresi?.find((sure) => sure.username === item.username)
+
+        return {
+          id: item.id,
+          userId: item.userId,
+          user: {
+            name: item.username || "Bilinmeyen Kullanıcı",
+            image: "/placeholder.svg?height=32&width=32",
+            department: "Kullanıcı",
+          },
+          action: item.aktifUygulama || "Bilinmeyen Uygulama",
+          status: (durumBilgisi.durum as "Online" | "Away" | "Offline") || "Offline",
+          time: sureBilgisi?.formattedSure || "00:00",
+          date: item.date ? new Date(item.date).toLocaleDateString() : "Bilinmiyor",
+        }
+      })
+
+      setActivities(mappedActivities)
+    }
+  }, [aktifUygulamalar, aktiflikDurumu, etkinlikSuresi])
 
   const handleEditClick = (rowId: number, column: string, currentValue: string) => {
     if (canEdit) {
@@ -211,8 +154,22 @@ export default function RealtimePage() {
     }
   }
 
-  const handleSaveEdit = (rowId: number, column: string) => {
+  const handleSaveEdit = async (rowId: number, column: string) => {
     // Değişiklikleri kaydet
+    if (column === "status") {
+      // Durum değişikliğini veritabanına kaydet
+      const activity = activities.find((a) => a.id === rowId)
+      if (activity) {
+        // Durum güncellemesini API'ye gönder
+        const success = await updateDurum(activity.id, editValue)
+        if (!success) {
+          console.error("Durum güncellenemedi")
+          return
+        }
+      }
+    }
+
+    // UI'ı güncelle
     setActivities((prev) =>
       prev.map((activity) => {
         if (activity.id === rowId) {
@@ -222,15 +179,12 @@ export default function RealtimePage() {
             return { ...activity, status: editValue as "Online" | "Away" | "Offline" }
           } else if (column === "time") {
             return { ...activity, time: editValue }
-          } else if (column === "duration") {
-            return { ...activity, duration: editValue }
           }
         }
         return activity
       }),
     )
 
-    // Düzenleme modunu kapat
     setEditingCell(null)
     setEditValue("")
   }
@@ -240,12 +194,10 @@ export default function RealtimePage() {
     setEditValue("")
   }
 
-  // Avatar bileşenini değiştirme butonu
   const toggleAvatarComponent = () => {
     setUseCustomAvatar((prev) => !prev)
   }
 
-  // Tablo sütunları
   const columns: ColumnDef<Activity>[] = [
     {
       accessorKey: "user",
@@ -254,20 +206,17 @@ export default function RealtimePage() {
         const user = row.getValue("user") as Activity["user"]
         return (
           <div className="flex items-center gap-3">
-            {useCustomAvatar ? (
-              <SimpleAvatar name={user.name} image={user.image} />
-            ) : (
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="invalid-image-url" alt={user.name} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {user.name
-                    .split(" ")
-                    .map((name) => name[0])
-                    .join("")
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            )}
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="invalid-image-url" alt={user.name} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {user.name
+                  .split(" ")
+                  .map((name) => name[0])
+                  .join("")
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+
             <div className="flex flex-col">
               <span className="font-medium">{user.name}</span>
               <span className="text-xs text-muted-foreground">{user.department}</span>
@@ -281,7 +230,7 @@ export default function RealtimePage() {
       header: ({ column }) => {
         return (
           <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Aktivite
+            Aktif Uygulama
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         )
@@ -374,7 +323,7 @@ export default function RealtimePage() {
     },
     {
       accessorKey: "time",
-      header: "Başlangıç Saati",
+      header: "Toplam Süre",
       cell: ({ row }) => {
         const time = row.getValue("time") as string
         const rowId = row.original.id
@@ -401,7 +350,7 @@ export default function RealtimePage() {
 
         return (
           <div className="flex items-center justify-between">
-            <span>{time || "---"}</span>
+            <span className="font-medium">{time || "00:00"}</span>
             {canEdit && (
               <Button
                 variant="ghost"
@@ -417,48 +366,18 @@ export default function RealtimePage() {
       },
     },
     {
-      accessorKey: "duration",
+      accessorKey: "date",
       header: ({ column }) => {
         return (
           <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Süre
+            Tarih
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         )
       },
       cell: ({ row }) => {
-        const duration = row.getValue("duration") as string
-        const rowId = row.original.id
-
-        if (editingCell && editingCell.rowId === rowId && editingCell.column === "duration") {
-          return (
-            <div className="flex items-center gap-2">
-              <Input value={editValue} onChange={(e) => setEditValue(e.target.value)} className="h-8 py-1" autoFocus />
-              <Button variant="ghost" size="icon" onClick={() => handleSaveEdit(rowId, "duration")}>
-                <Save className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleCancelEdit}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )
-        }
-
-        return (
-          <div className="flex items-center justify-between">
-            <span>{duration || "---"}</span>
-            {canEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="ml-2 h-6 w-6 opacity-0 group-hover:opacity-100"
-                onClick={() => handleEditClick(rowId, "duration", duration || "")}
-              >
-                <Edit className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-        )
+        const date = row.getValue("date") as string
+        return <div>{date}</div>
       },
     },
   ]
@@ -482,7 +401,18 @@ export default function RealtimePage() {
     <DashboardLayout>
       <div className="flex flex-col gap-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-2xl font-bold tracking-tight">Gerçek Zamanlı Aktivite</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">Gerçek Zamanlı Aktivite</h1>
+            {isConnected ? (
+              <Badge className="bg-green-500 ml-2">
+                <Wifi className="h-3 w-3 mr-1" /> Bağlı
+              </Badge>
+            ) : (
+              <Badge className="bg-red-500 ml-2">
+                <WifiOff className="h-3 w-3 mr-1" /> Bağlantı Yok
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -588,4 +518,3 @@ export default function RealtimePage() {
     </DashboardLayout>
   )
 }
-

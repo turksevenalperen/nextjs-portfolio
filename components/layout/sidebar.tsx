@@ -96,12 +96,7 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/teams",
       active: pathname === "/teams",
     },
-    {
-      label: "Zaman Takibi",
-      icon: Clock,
-      href: "/time",
-      active: pathname === "/time",
-    },
+
   ]
 
   // Avatar bileşenini değiştirme fonksiyonu
@@ -250,19 +245,14 @@ export function Sidebar({ className }: SidebarProps) {
           </DropdownMenu>
         </div>
 
-        {/* Avatar bileşenini değiştirme butonu */}
-        <div className="mt-2">
-          <Button onClick={toggleAvatarComponent} variant="outline" size="sm" className="w-full">
-            {useCustomAvatar ? "Shadcn Avatar Kullan" : "Özel Avatar Kullan"}
-          </Button>
-        </div>
+      
       </div>
     </div>
   )
 
   return (
     <>
-      {/* Mobil Sidebar */}
+    
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="lg:hidden absolute left-4 top-4 z-50">
@@ -275,7 +265,7 @@ export function Sidebar({ className }: SidebarProps) {
         </SheetContent>
       </Sheet>
 
-      {/* Masaüstü Sidebar */}
+     
       <aside className={cn("hidden border-r bg-background lg:block", className)}>{SidebarContent}</aside>
     </>
   )

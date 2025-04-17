@@ -24,12 +24,9 @@ import { useAdminMode } from "@/hooks/use-admin-mode"
 import { useAuth } from "@/hooks/use-auth"
 import { Plus } from "lucide-react"
 
-// localStorage anahtarı
 const STORAGE_KEY = "employees-data"
 
-// Basit bir avatar bileşeni oluşturalım (shadcn/ui Avatar çalışmıyorsa)
 function SimpleAvatar({ name, image }: { name: string; image?: string }) {
-  // İsmin baş harflerini al
   const initials = name
     .split(" ")
     .map((part) => part[0])
@@ -43,7 +40,6 @@ function SimpleAvatar({ name, image }: { name: string; image?: string }) {
   )
 }
 
-// Büyük detay avatarı
 function DetailAvatar({ name, image }: { name: string; image?: string }) {
   const initials = name
     .split(" ")
@@ -141,10 +137,8 @@ const employeesData = [
   },
 ]
 
-// Departman listesi
 const departments = ["Teknoloji", "Tasarım", "Yönetim", "Veri", "İK", "Pazarlama", "Satış"]
 
-// Pozisyon listesi
 const positions = [
   "Yazılım Geliştirici",
   "UI/UX Tasarımcı",
@@ -162,10 +156,8 @@ export default function EmployeesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [employees, setEmployees] = useState<typeof employeesData>([])
 
-  // Avatar bileşeninin çalışıp çalışmadığını kontrol etmek için state
   const [useCustomAvatar, setUseCustomAvatar] = useState(true)
 
-  // Çalışan ekleme/düzenleme için state'ler
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [newEmployee, setNewEmployee] = useState({
@@ -182,23 +174,19 @@ export default function EmployeesPage() {
   const { isAdminMode } = useAdminMode()
   const { isAdmin } = useAuth()
 
-  // Sayfa yüklendiğinde localStorage'dan verileri al
   useEffect(() => {
     const loadEmployeesFromStorage = () => {
       try {
         const storedEmployees = localStorage.getItem(STORAGE_KEY)
 
         if (storedEmployees) {
-          // localStorage'dan veri varsa onu kullan
           setEmployees(JSON.parse(storedEmployees))
         } else {
-          // localStorage'da veri yoksa varsayılan veriyi kullan ve kaydet
           setEmployees(employeesData)
           localStorage.setItem(STORAGE_KEY, JSON.stringify(employeesData))
         }
       } catch (error) {
         console.error("Çalışan verileri yüklenirken hata oluştu:", error)
-        // Hata durumunda varsayılan veriyi kullan
         setEmployees(employeesData)
       }
     }
@@ -206,15 +194,12 @@ export default function EmployeesPage() {
     loadEmployeesFromStorage()
   }, [])
 
-  // Çalışan verileri değiştiğinde localStorage'ı güncelle
   useEffect(() => {
-    // İlk render'da boş dizi olmaması için kontrol
     if (employees.length > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(employees))
     }
   }, [employees])
 
-  // Arama sorgusuna göre çalışanları filtreliyoruz
   const filteredEmployees = employees.filter(
     (employee) =>
       employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -253,14 +238,11 @@ export default function EmployeesPage() {
     e.preventDefault()
 
     if (isEditing) {
-      // Mevcut çalışanı güncelle
       setEmployees((prev) => prev.map((emp) => (emp.id === newEmployee.id ? newEmployee : emp)))
     } else {
-      // Yeni çalışan ekle
       setEmployees((prev) => [...prev, newEmployee])
     }
 
-    // Formu kapat
     setIsAddEmployeeOpen(false)
     setNewEmployee({
       id: 0,
@@ -283,12 +265,10 @@ export default function EmployeesPage() {
     setNewEmployee((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Avatar bileşenini değiştirme butonu
   const toggleAvatarComponent = () => {
     setUseCustomAvatar((prev) => !prev)
   }
 
-  // Admin yetkisi kontrolü
   const canEdit = isAdmin && isAdminMode
 
   return (
@@ -307,7 +287,7 @@ export default function EmployeesPage() {
               />
             </div>
 
-            {/* Sadece admin ve admin modunda ise Çalışan Ekle butonu göster */}
+            
             {canEdit && (
               <Button onClick={handleAddEmployeeClick} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -317,14 +297,9 @@ export default function EmployeesPage() {
           </div>
         </div>
 
-        {/* Avatar bileşenini değiştirme butonu */}
-        <div className="mb-4">
-          <Button onClick={toggleAvatarComponent} variant="outline">
-            {useCustomAvatar ? "Shadcn Avatar Kullan" : "Özel Avatar Kullan"}
-          </Button>
-        </div>
+        
 
-        {/* Çalışan Kartları */}
+       
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredEmployees.map((employee) => (
             <Card
@@ -359,7 +334,7 @@ export default function EmployeesPage() {
           ))}
         </div>
 
-        {/* Çalışan Detay Modalı */}
+       
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-md">
             {selectedEmployee && (
@@ -391,6 +366,7 @@ export default function EmployeesPage() {
                     <div>
                       <h4 className="text-sm font-medium">E-posta</h4>
                       <p className="text-sm text-muted-foreground">{selectedEmployee.email}</p>
+                      
                     </div>
                     <div>
                       <h4 className="text-sm font-medium">Telefon</h4>
@@ -403,7 +379,6 @@ export default function EmployeesPage() {
                   </div>
                 </div>
 
-                {/* Sadece admin ve admin modunda ise Düzenle butonu göster */}
                 {canEdit && (
                   <DialogFooter>
                     <Button variant="outline" onClick={() => handleEditEmployee(selectedEmployee)}>
@@ -416,7 +391,6 @@ export default function EmployeesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Çalışan Ekleme/Düzenleme Modalı */}
         <Dialog open={isAddEmployeeOpen} onOpenChange={setIsAddEmployeeOpen}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
@@ -510,7 +484,7 @@ export default function EmployeesPage() {
                   className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                   placeholder="Çalışan hakkında kısa bir açıklama..."
                 />
-              </div>
+               </div>
 
               <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsAddEmployeeOpen(false)}>

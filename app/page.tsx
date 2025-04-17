@@ -2,8 +2,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import LoginForm from "@/components/LoginForm"
-import A from "@/components/A"
-import B from "@/components/B"
 
 export default async function Page() {
 
@@ -14,14 +12,12 @@ export default async function Page() {
     redirect("/dashboard")
   }
 
-  
-  return(
-<div>
-    <LoginForm />
 
-  
+  return (
+    <div>
+      <LoginForm />
     </div>
   )
 
-  
+
 }

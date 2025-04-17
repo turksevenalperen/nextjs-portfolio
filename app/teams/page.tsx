@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Users, CheckCircle } from "lucide-react"
+import { Search, Users, CheckCircle, User } from "lucide-react"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -77,64 +77,77 @@ const teamsData = [
 export default function TeamsPage() {
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Arama sorgusuna göre takımları filtreliyoruz
+  
   const filteredTeams = teamsData.filter(
     (team) =>
       team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       team.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       team.members.some(
-        (member) =>
+        (member)=>
           member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          member.role.toLowerCase().includes(searchQuery.toLowerCase()),
+          member.role.toLowerCase().includes(searchQuery.toLowerCase())
+
       ),
-  )
+      )
+  
+return(
 
-  return (
-    <DashboardLayout>
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-2xl font-bold tracking-tight">Takımlar</h1>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Takım veya üye ara..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+  <DashboardLayout>
+     <div className="flex flex-col gap-5">
+
+     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+        <h1 className="text-2xl font-bold tracking-tight">Takımlar</h1>
+        <div className="relative w-full sm:w-64">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+
+        <input 
+        placeholder="Takım vey Üye ara..."
+        className="pl-8" 
+        value={searchQuery}
+        onChange={(e)=> setSearchQuery(e.target.value)}
+        />
         </div>
+      </div>
+    </div>
 
-        {/* Takım Kartları */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-2">
-          {filteredTeams.map((team) => (
-            <Card key={team.id} className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  {team.name}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">{team.description}</p>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <h3 className="mb-2 text-sm font-medium">Takım Üyeleri</h3>
-                <div className="space-y-3">
-                  {team.members.map((member, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={member.image} alt={member.name} />
-                        <AvatarFallback>{member.name.substring(0, 2)}</AvatarFallback>
-                      </Avatar>
-                      <div>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-2">
+      {filteredTeams.map ((team) =>(
+      <Card key={team.id} className="flex flex-col">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+              {team.name}
+           
+
+          </CardTitle>
+          <p className="text-sm text-muted-foreground" >{team.description}</p>
+        </CardHeader>
+        <CardContent className="flex-1">
+        <h3 className="mb-2 text-sm font-medium">Takım Üyeleri</h3>
+        <div className="space-y-3">
+          {team.members.map((member, index)=>(
+            <div key={index} className="flex items-center gap-3">
+              <Avatar className="h-8 w-8" >
+                <AvatarImage src={member.image} alt={member.name} />
+                <AvatarFallback>
+                  {member.name.substring(0,2)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
                         <p className="text-sm font-medium leading-none">{member.name}</p>
                         <p className="text-xs text-muted-foreground">{member.role}</p>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter className="border-t pt-4 flex flex-col items-start gap-2">
-                <div className="grid w-full grid-cols-3 gap-2 text-center">
+
+
+            </div>
+          ))}
+        </div>
+
+
+        </CardContent>
+        <CardFooter>
+        <div className="grid w-full grid-cols-3 gap-2 text-center">
                   <div className="flex flex-col">
                     <span className="text-lg font-bold">{team.stats.projects}</span>
                     <span className="text-xs text-muted-foreground">Projeler</span>
@@ -165,12 +178,17 @@ export default function TeamsPage() {
                     />
                   </div>
                 </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </DashboardLayout>
-  )
-}
 
+        </CardFooter>
+      </Card>
+      ))}
+
+
+    </div>
+
+  
+
+
+  </DashboardLayout>
+)
+}
